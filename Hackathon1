@@ -1,0 +1,185 @@
+# text analysis using vader
+import requests
+from bs4 import BeautifulSoup
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+def Sentiment_(url):
+    # Fetch the webpage content
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    # Extract text from the webpage
+    text = soup.get_text()
+    print(text)
+
+    from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+    # Create an instance of SentimentIntensityAnalyzer
+    analyzer = SentimentIntensityAnalyzer()
+    # Perform sentiment analysis
+    sentiment = analyzer.polarity_scores(text)
+    print(sentiment)
+    l1=[]
+    global l2
+    l2=[] # Sentiment value
+    for key in sentiment:
+        l1.append(key)
+        l2.append(sentiment[key])
+        print(f"Key: {key}, Value: {sentiment[key]}")
+    print("Negative,Neutral,positive,compound : ",l2)
+    global Negative,Neutral,Positive
+    Negative=l2[0]
+    Neutral=l2[1]
+    Positive=l2[2]
+    Compound=l2[3]
+a= "https://economictimes.indiatimes.com/markets/stocks/live-blog/bse-sensex-today-live-nifty-stock-market-updates-18-october-2024/liveblog/msid-114332324.cms"
+b= "https://economictimes.indiatimes.com/markets/stocks/stock-watch/stock-market-update-stocks-that-hit-52-week-lows-on-nse/articleshow/114272394.cmshttps://economictimes.indiatimes.com/markets/stocks/stock-watch/stock-market-update-stocks-that-hit-52-week-lows-on-nse/articleshow/114272394.cms"
+c= "https://m.economictimes.com/markets/stocks/live-blog/bse-sensex-today-live-nifty-stock-market-updates-4-october-2024/liveblog/113922475.cms"
+d= "https://www.businesstoday.in/indices/nifty-50?utm_source=btweb_share"
+e= "https://m.economictimes.com/markets/stocks/live-blog/bse-sensex-today-live-nifty-stock-market-updates-18-october-2024/liveblog/114332324.cms"
+url_list=[a,b,c,d,e]
+i=0
+for i in range(len(url_list)):
+    url=url_list[i]
+    Sentiment_(url)
+neg_percent=Negative*100
+pos_percent=Positive*100
+Neu_percent=Neutral*100
+print("Negative percentage of sentiment:",neg_percent)
+print("Positive percentage of sentiment:",pos_percent)
+print("Neutral percentage of sentiment:",Neu_percent)
+import plotly.graph_objects as go
+def calculate_sentiment(stock_price_change, volume_change, news_sentiment_score, social_media_sentiment_score):
+    # Normalize and weight different factors
+    sentiment_score = (0.4 * stock_price_change + 0.3 * volume_change + 0.2 * news_sentiment_score + 0.1 * social_media_sentiment_score)
+    return max(0, min(100, sentiment_score))  # Clamp between 0 and 100
+def create_sentiment_gauge(sentiment_score):
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        title = {'text': "Sentiment Meter"},
+        gauge = {
+            'axis': {'range': [0, 100]},
+            'steps': [
+                {'range': [0, neg_percent], 'color': "red"},  # Bearish
+                {'range': [neg_percent, Neu_percent], 'color': "grey"},  # Neutral
+                {'range': [Neu_percent, 100], 'color': "orange"}  # Bullish
+            ],
+            }))
+
+    fig.show()
+print("Sentiment")
+# Example sentiment score (50 = Neutral)
+create_sentiment_gauge(0)
+
+
+
+
+# Quaterly data and forecasted volume
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+def forecast_volume():
+    data = {                                                                               #data creating
+        'Date': ['2024-7-22','2024-8-22','2024-9-23'],
+        'volume': [32.4190553,22.0345125,20.9187756] #shares traded in month in corer
+    }
+    df = pd.DataFrame(data)
+    df['Date'] = pd.to_datetime(df['Date'])
+    df['Day'] = df['Date'].dt.dayofyear
+    df['Year'] = df['Date'].dt.year
+    X = df[['Day', 'Year']]
+    y = df['volume']
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    future_dates = pd.date_range(start='2024-7-22', periods=5)
+    future_days = future_dates.dayofyear
+    future_years = future_dates.year
+    future_features = np.column_stack((future_days, future_years))
+    forecasted_vol = model.predict(future_features)
+    print("Forcasted volumes of Nifty : ",forecasted_vol) #linear regression
+    global avg_vol
+    avg_vol=sum(forecasted_vol)/len(forecasted_vol)
+    print("Average forecasted volume:",avg_vol) #5 periods forecasted0
+forecast_volume()
+import plotly.graph_objects as go
+def calculate_sentiment(stock_price_change, volume_change, news_sentiment_score, social_media_sentiment_score):
+    # Normalize and weight different factors
+    sentiment_score = (0.4 * stock_price_change + 0.3 * volume_change + 0.2 * news_sentiment_score + 0.1 * social_media_sentiment_score)
+    return max(0, min(100, sentiment_score))  # Clamp between 0 and 100
+def create_sentiment_gauge(sentiment_score):
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = sentiment_score,
+        title = {'text': "Volume Forecasted Sentiment Meter"},
+        gauge = {
+            'axis': {'range': [0, 100]},
+            'steps': [
+                {'range': [0, 50], 'color': "white"},  # Bearish
+                {'range': [50, 50], 'color': "white"},  # Neutral
+                {'range': [50, 100], 'color': "white"}  # Bullish
+            ],
+            'threshold': {'line': {'color': "black", 'width': 4},'thickness': 0.25,'value': sentiment_score
+            }}))
+
+    fig.show()
+print("Volume forecasted sentiment")
+# Example sentiment score (50 = Neutral)
+create_sentiment_gauge(avg_vol)
+
+
+
+
+
+# keyword search
+import requests
+from bs4 import BeautifulSoup
+import re
+# Define your positive and negative keywords
+positive_keywords = ["recovery", "growth", "bullish", "gains","record high","improvement",]
+negative_keywords = ["loss", "decline", "collapse", "slowdown", "crisis", "drop","fall"]
+# Function to fetch and parse the website
+def fetch_website_text(url):
+    try:
+        # Fetch the content from the URL
+        response = requests.get(url)
+        # Check if the request was successful
+        if response.status_code == 200:
+            # Parse the HTML content
+            soup = BeautifulSoup(response.content, "html.parser")
+            # Extract and return the text
+            return soup.get_text()
+        else:
+            return None
+    except Exception as e:
+        print(f"Error fetching website: {e}")
+        return None
+# Function to perform keyword matching and calculate sentiment score
+def sentiment_score(text):
+    words = re.findall(r'\b\w+\b', text.lower())  # Tokenize words using regex
+    pos_count = sum([1 for word in words if word in positive_keywords])
+    neg_count = sum([1 for word in words if word in negative_keywords])
+    return pos_count - neg_count  # Positive score indicates positive sentiment, and vice versa
+# Main function
+def analyze_website_sentiment(url):
+    # Fetch the website content
+    website_text = fetch_website_text(url)
+    if website_text:
+        # Calculate sentiment score
+        score = sentiment_score(website_text)
+        if score > 0:
+            print(f"The website '{url}' has a positive sentiment.")
+        elif score < 0:
+            print(f"The website '{url}' has a negative sentiment.")
+        else:
+            print(f"The website '{url}' has a neutral sentiment.")
+    else:
+        print(f"Failed to analyze sentiment for the website: {url}")
+
+# Example usage
+url = "https://www.businesstoday.in/indices/nifty-50?utm_source=btweb_share"
+analyze_website_sentiment(url)
+url2="https://m.economictimes.com/markets/stocks/live-blog/bse-sensex-today-live-nifty-stock-market-updates-18-october-2024/liveblog/114332324.cms"
+analyze_website_sentiment(url2)
+url3="https://m.economictimes.com/markets/stocks/live-blog/bse-sensex-today-live-nifty-stock-market-updates-4-october-2024/liveblog/113922475.cms"
+analyze_website_sentiment(url3)
+url4="https://economictimes.indiatimes.com/markets/stocks/live-blog/bse-sensex-today-live-nifty-stock-market-updates-18-october-2024/liveblog/msid-114332324.cms"
+analyze_website_sentiment(url4)
